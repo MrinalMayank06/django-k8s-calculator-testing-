@@ -35,8 +35,21 @@ jobs:
     needs: build-and-push
 
     steps:
-      - name: Test Supabase Connection
+      - name: Supabase Health Check
         run: |
-          curl -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+          echo "Starting Supabase connection test..."
+          
+          RESPONSE=$(curl -s -o response.txt -w "%{http_code}" \
+          "${{ secrets.SUPABASE_URL }}/rest/v1/" \
           -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+
+          echo "HTTP Status: $RESPONSE"
+          cat response.txt
+
+          if [ "$RESPONSE" -ne 200 ] && [ "$RESPONSE" -ne 401 ]; then
+            echo "❌ Supabase connection failed"
+            exit 1
+          else
+            echo "✅ Supabase connection reachable"
+          fi
