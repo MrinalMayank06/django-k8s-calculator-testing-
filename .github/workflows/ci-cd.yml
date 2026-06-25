@@ -1,4 +1,4 @@
-name: Django CI/CD Pipeline
+name: CI-CD Pipeline
 
 on:
   push:
@@ -9,17 +9,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      # 1. Checkout code
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Login to DockerHub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      # 2. Login to DockerHub
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build Docker image
-      run: docker build -t ${{ secrets.DOCKER_USERNAME }}/django-calculator:latest .
+      # 3. Build Docker image
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/django-calculator:latest .
 
-    - name: Push Docker image
-      run: docker push ${{ secrets.DOCKER_USERNAME }}/django-calculator:latest
+      # 4. Push Docker image
+      - name: Push Docker image
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/django-calculator:latest
+
+  supabase-test:
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Test Supabase Connection
+        run: |
+          curl -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
